@@ -1,0 +1,32 @@
+
+
+CPU 0:
+   0x4fffffff 0x00: eax=0x005d6b33 ebx=0x00000001 ecx=0xbf28e21f edx=0xf9e788c0
+CPU 1:
+   0x4fffffff 0x00: eax=0x000a01ba ebx=0x00000000 ecx=0xeef7002d edx=0xf9e788c0
+
+
+
+After restart 1
+CPU 0:
+   0x4fffffff 0x00: eax=0x00bcab66 ebx=0x00000003 ecx=0x0875e185 edx=0xeda948c0
+CPU 1:
+   0x4fffffff 0x00: eax=0x00121d4f ebx=0x00000001 ecx=0x3f2e8155 edx=0xeda948c0
+diff of cpu1 + cpu0 = 675BC8
+
+after restart 2
+CPU 0:
+   0x4fffffff 0x00: eax=0x01196224 ebx=0x00000004 ecx=0x2b982bfe edx=0xa1d618c0
+CPU 1:
+   0x4fffffff 0x00: eax=0x001942c6 ebx=0x00000001 ecx=0x7f3f11e8 edx=0xa1d618c0
+diff of cpu1 + cpu0 = 6544437
+
+After restart from top menu of the guest os
+CPU 0:
+   0x4fffffff 0x00: eax=0x01747c41 ebx=0x00000005 ecx=0x4ca36db4 edx=0xd57a08c0
+CPU 1:
+   0x4fffffff 0x00: eax=0x0020b97a ebx=0x00000001 ecx=0xbd85bd4e edx=0xd57a08c0
+diff of cpu1 + cpu0 = 6459601
+
+madhukar@madhukar-Standard-PC-i440FX-PIIX-1996:~$ 
+

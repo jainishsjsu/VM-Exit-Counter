@@ -1,0 +1,93 @@
+CPU 0:
+   0x4fffffff 0x00: eax=0x0063f002 ebx=0x00000002 ecx=0x11e037da edx=0xe6fea8c0
+CPU 1:
+   0x4fffffff 0x00: eax=0x0009eb36 ebx=0x00000000 ecx=0xa40e22cc edx=0xe6fea8c0
+
+
+Before changes
+
+
+
+
+madhukar@madhukar-Standard-PC-i440FX-PIIX-1996:~$ cpuid --leaf=0x4FFFFFFF
+CPU 0:
+   0x4fffffff 0x00: eax=0x0068eea8 ebx=0x00000002 ecx=0x4bb6504f edx=0x967958c0
+CPU 1:
+   0x4fffffff 0x00: eax=0x00107b7f ebx=0x00000000 ecx=0xe75864df edx=0x967958c0
+
+madhukar@madhukar-Standard-PC-i440FX-PIIX-1996:~$ cpuid --leaf=0x4FFFFFFF
+CPU 0:
+   0x4fffffff 0x00: eax=0x00692353 ebx=0x00000002 ecx=0x4dcb9300 edx=0xed9848c0
+CPU 1:
+   0x4fffffff 0x00: eax=0x001091b5 ebx=0x00000000 ecx=0xe813ab1a edx=0xed9848c0
+madhukar@madhukar-Standard-PC-i440FX-PIIX-1996:~$ 
+
+cpu0 exits 13483
+
+
+After changes
+CPU 0:
+   0x4fffffff 0x00: eax=0x005b168b ebx=0x00000001 ecx=0x3fc6b173 edx=0x90e958c0 = eax= 5969547 ebx = 1 ecx = 1069986163, edx = 2431211712
+
+
+CPU 1:
+   0x4fffffff 0x00: eax=0x0005b600 ebx=0x00000000 ecx=0x52bc15cc edx=0x90e958c0
+
+
+CPU 0:
+   0x4fffffff 0x00: eax=0x005b484b ebx=0x00000001 ecx=0x436bf924 edx=0xc2a758c0
+CPU 1:
+   0x4fffffff 0x00: eax=0x0005f307 ebx=0x00000000 ecx=0x56d2bd68 edx=0xc2a758c0
+
+
+
+cpu0 exits 12736
+
+
+
+
+after final chages
+
+CPU 0:
+   0x4fffffff 0x00: eax=0x005c3ef4 ebx=0x00000001 ecx=0x2b120903 edx=0x147f48c0
+   6045428 , 5017569539
+CPU 1:
+   0x4fffffff 0x00: eax=0x000562b8 ebx=0x00000000 ecx=0x452f04db edx=0x147f48c0
+   352952,1160709339
+
+2nd run
+CPU 0:
+   0x4fffffff 0x00: eax=0x005c7b02 ebx=0x00000001 ecx=0x2f48eb36 edx=0x518df8c0
+   6060802, 5088275254
+CPU 1:
+   0x4fffffff 0x00: eax=0x000593f7 ebx=0x00000000 ecx=0x4961dd5c edx=0x518df8c0
+   365559, 1231150428
+
+difference in exits between 1st run and 2nd run
+cpu 0 = 15374
+cpu1 = 12607
+
+After vm restart
+CPU 0:
+   0x4fffffff 0x00: eax=0x00b89fef ebx=0x00000002 ecx=0x40b9f06f edx=0x9877e8c0
+   12099567, 9675862127
+CPU 1:
+   0x4fffffff 0x00: eax=0x000b5e10 ebx=0x00000000 ecx=0x7b150865 edx=0x9877e8c0
+   744976, 2064975973
+
+
+2nd Run:
+CPU 0:
+   0x4fffffff 0x00: eax=0x00b8d560 ebx=0x00000002 ecx=0x44706895 edx=0xe2cef8c0
+   12113248, 9738152085
+CPU 1:
+   0x4fffffff 0x00: eax=0x000b9811 ebx=0x00000000 ecx=0x7f41cf0d edx=0xe2cef8c0
+	759825, 2135019277
+difference in exits between 1st run and 2nd run
+cpu0 = 13681
+cpu1 = 14849
+
+CPU Exits after restart
+cpu0 = 12099567 - 6060802 = 6038765
+cpu 1 = 744976 - 365559 = 379417
+

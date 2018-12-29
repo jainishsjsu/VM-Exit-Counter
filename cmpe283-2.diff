@@ -1,0 +1,182 @@
+diff --git a/arch/x86/kvm/cpuid.c b/arch/x86/kvm/cpuid.c
+index 7bcfa61375c0..fcb5ddf29e6b 100644
+--- a/arch/x86/kvm/cpuid.c
++++ b/arch/x86/kvm/cpuid.c
+@@ -941,15 +941,44 @@ int kvm_emulate_cpuid(struct kvm_vcpu *vcpu)
+ 	u32 eax, ebx, ecx, edx;
+ 
+ 	if (cpuid_fault_enabled(vcpu) && !kvm_require_cpl(vcpu, 0))
+-		return 1;
++	   	return 1;
+ 
+ 	eax = kvm_register_read(vcpu, VCPU_REGS_RAX);
+-	ecx = kvm_register_read(vcpu, VCPU_REGS_RCX);
+-	kvm_cpuid(vcpu, &eax, &ebx, &ecx, &edx, true);
+-	kvm_register_write(vcpu, VCPU_REGS_RAX, eax);
+-	kvm_register_write(vcpu, VCPU_REGS_RBX, ebx);
+-	kvm_register_write(vcpu, VCPU_REGS_RCX, ecx);
+-	kvm_register_write(vcpu, VCPU_REGS_RDX, edx);
++	// ecx = kvm_register_read(vcpu, VCPU_REGS_RCX);
++	// kvm_cpuid(vcpu, &eax, &ebx, &ecx, &edx, true);
++	// kvm_register_write(vcpu, VCPU_REGS_RAX, eax);
++	// kvm_register_write(vcpu, VCPU_REGS_RBX, ebx);
++	// kvm_register_write(vcpu, VCPU_REGS_RCX, ecx);
++	// kvm_register_write(vcpu, VCPU_REGS_RDX, edx);
++	if(eax == 0x4FFFFFFF)
++	{
++		u32 total_exits = vcpu->cmpe283_metrics.total_exit_count;
++		eax = total_exits;
++		ebx = (u32)((vcpu->cmpe283_metrics.total_cycle_count & 0xFFFFFFFF00000000LL) >> 32);
++		ecx = (u32)(vcpu->cmpe283_metrics.total_cycle_count & 0xFFFFFFFFLL);
++		printk(KERN_INFO "Hey there, total cpu exits: %u, total cycles: %llu", vcpu->cmpe283_metrics.total_exit_count, vcpu->cmpe283_metrics.total_cycle_count);
++		kvm_register_write(vcpu, VCPU_REGS_RAX, eax);
++		kvm_register_write(vcpu, VCPU_REGS_RBX, ebx);
++		kvm_register_write(vcpu, VCPU_REGS_RCX, ecx);
++		kvm_register_write(vcpu, VCPU_REGS_RDX, edx);
++	}
++	else
++	{
++//		if (cpuid_fault_enabled(vcpu) && !kvm_require_cpl(vcpu, 0))
++//	 		return 1;
++
++		eax = kvm_register_read(vcpu, VCPU_REGS_RAX);
++		ecx = kvm_register_read(vcpu, VCPU_REGS_RCX);
++		kvm_cpuid(vcpu, &eax, &ebx, &ecx, &edx, true);
++		kvm_register_write(vcpu, VCPU_REGS_RAX, eax);
++		kvm_register_write(vcpu, VCPU_REGS_RBX, ebx);
++		kvm_register_write(vcpu, VCPU_REGS_RCX, ecx);
++		kvm_register_write(vcpu, VCPU_REGS_RDX, edx);
++		
++	}
++
++//	if (cpuid_fault_enabled(vcpu) && !kvm_require_cpl(vcpu, 0))
++//	 	return 1;
+ 	return kvm_skip_emulated_instruction(vcpu);
+ }
+ EXPORT_SYMBOL_GPL(kvm_emulate_cpuid);
+diff --git a/arch/x86/kvm/vmx.c b/arch/x86/kvm/vmx.c
+index 4555077d69ce..d963d5411e14 100644
+--- a/arch/x86/kvm/vmx.c
++++ b/arch/x86/kvm/vmx.c
+@@ -66,6 +66,8 @@
+ 
+ MODULE_AUTHOR("Qumranet");
+ MODULE_LICENSE("GPL");
++//Madhukar
++u32 exit_count = 0;
+ 
+ static const struct x86_cpu_id vmx_cpu_id[] = {
+ 	X86_FEATURE_MATCH(X86_FEATURE_VMX),
+@@ -10512,10 +10514,20 @@ static void dump_vmcs(void)
+  */
+ static int vmx_handle_exit(struct kvm_vcpu *vcpu)
+ {
++	//Madhukar
++	u64 start_time = 0;
++	u64 end_time = 0;
++	exit_count = vcpu->cmpe283_metrics.total_exit_count;
++	exit_count++;
++	vcpu->cmpe283_metrics.total_exit_count = exit_count;
++
++
+ 	struct vcpu_vmx *vmx = to_vmx(vcpu);
+ 	u32 exit_reason = vmx->exit_reason;
+ 	u32 vectoring_info = vmx->idt_vectoring_info;
+ 
++	start_time = rdtsc();
++
+ 	trace_kvm_exit(exit_reason, vcpu, KVM_ISA_VMX);
+ 
+ 	/*
+@@ -10530,16 +10542,30 @@ static int vmx_handle_exit(struct kvm_vcpu *vcpu)
+ 
+ 	/* If guest state is invalid, start emulating */
+ 	if (vmx->emulation_required)
+-		return handle_invalid_guest_state(vcpu);
++	{
++		int ret = handle_invalid_guest_state(vcpu);
++		end_time = rdtsc();
++		vcpu->cmpe283_metrics.total_cycle_count = vcpu->cmpe283_metrics.total_cycle_count + end_time - start_time;
++		return ret;
++	}
+ 
+ 	if (is_guest_mode(vcpu) && nested_vmx_exit_reflected(vcpu, exit_reason))
+-		return nested_vmx_reflect_vmexit(vcpu, exit_reason);
++	{
++		int ret  = nested_vmx_reflect_vmexit(vcpu, exit_reason);
++		end_time = rdtsc();
++		vcpu->cmpe283_metrics.total_cycle_count = vcpu->cmpe283_metrics.total_cycle_count + end_time - start_time;
++		
++		return ret;
++	}
+ 
+ 	if (exit_reason & VMX_EXIT_REASONS_FAILED_VMENTRY) {
+ 		dump_vmcs();
+ 		vcpu->run->exit_reason = KVM_EXIT_FAIL_ENTRY;
+ 		vcpu->run->fail_entry.hardware_entry_failure_reason
+ 			= exit_reason;
++		end_time = rdtsc();
++		vcpu->cmpe283_metrics.total_cycle_count = vcpu->cmpe283_metrics.total_cycle_count + end_time - start_time;
++		
+ 		return 0;
+ 	}
+ 
+@@ -10547,6 +10573,9 @@ static int vmx_handle_exit(struct kvm_vcpu *vcpu)
+ 		vcpu->run->exit_reason = KVM_EXIT_FAIL_ENTRY;
+ 		vcpu->run->fail_entry.hardware_entry_failure_reason
+ 			= vmcs_read32(VM_INSTRUCTION_ERROR);
++		end_time = rdtsc();
++		vcpu->cmpe283_metrics.total_cycle_count = vcpu->cmpe283_metrics.total_cycle_count + end_time - start_time;
++		
+ 		return 0;
+ 	}
+ 
+@@ -10573,6 +10602,9 @@ static int vmx_handle_exit(struct kvm_vcpu *vcpu)
+ 			vcpu->run->internal.data[3] =
+ 				vmcs_read64(GUEST_PHYSICAL_ADDRESS);
+ 		}
++		end_time = rdtsc();
++		vcpu->cmpe283_metrics.total_cycle_count = vcpu->cmpe283_metrics.total_cycle_count + end_time - start_time;
++		
+ 		return 0;
+ 	}
+ 
+@@ -10597,11 +10629,19 @@ static int vmx_handle_exit(struct kvm_vcpu *vcpu)
+ 
+ 	if (exit_reason < kvm_vmx_max_exit_handlers
+ 	    && kvm_vmx_exit_handlers[exit_reason])
+-		return kvm_vmx_exit_handlers[exit_reason](vcpu);
++		{ 
++			int ret = kvm_vmx_exit_handlers[exit_reason](vcpu); 
++			end_time = rdtsc();
++			vcpu->cmpe283_metrics.total_cycle_count = vcpu->cmpe283_metrics.total_cycle_count + end_time - start_time;
++		
++			return ret;
++		}
+ 	else {
+ 		vcpu_unimpl(vcpu, "vmx: unexpected exit reason 0x%x\n",
+ 				exit_reason);
+ 		kvm_queue_exception(vcpu, UD_VECTOR);
++		end_time = rdtsc();
++		vcpu->cmpe283_metrics.total_cycle_count = vcpu->cmpe283_metrics.total_cycle_count + end_time - start_time;
+ 		return 1;
+ 	}
+ }
+diff --git a/include/linux/kvm_host.h b/include/linux/kvm_host.h
+index c926698040e0..5622dc3e6d4c 100644
+--- a/include/linux/kvm_host.h
++++ b/include/linux/kvm_host.h
+@@ -260,6 +260,13 @@ struct kvm_vcpu {
+ 	} async_pf;
+ #endif
+ 
++//Madhukar
++	struct {
++		u32 total_exit_count;
++		u64 total_cycle_count;
++	} cmpe283_metrics;
++
++
+ #ifdef CONFIG_HAVE_KVM_CPU_RELAX_INTERCEPT
+ 	/*
+ 	 * Cpu relax intercept or pause loop exit optimization
