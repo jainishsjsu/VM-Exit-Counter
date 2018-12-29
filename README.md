@@ -1,0 +1,2 @@
+Use the diff file and generate a patch. Install the CPUID utility in the guest OS. When ran CPUID leaf fucntion CPUID --leaf=0x4FFFFFF
+The eax will have the exit counts, ebx -> High bit 32 bit of time involved, ecx -> Low 32 bit of time involved
